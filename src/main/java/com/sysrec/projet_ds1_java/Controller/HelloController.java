@@ -1,4 +1,4 @@
-package com.sysrec.projet_ds1_java;
+package com.sysrec.projet_ds1_java.Controller;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
