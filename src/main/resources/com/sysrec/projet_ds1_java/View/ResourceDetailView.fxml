@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox spacing="10" style="-fx-padding: 20;" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.sysrec.projet_ds1_java.Controller.ResourceDetailController">
+
+    <Label text="Resource Details" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+
+    <GridPane hgap="10" vgap="8">
+        <Label text="Title:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <Label fx:id="titleLabel" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="Category:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <Label fx:id="categoryLabel" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="Difficulty:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <Label fx:id="difficultyLabel" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+        <Label text="Teacher:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <Label fx:id="teacherLabel" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+        <Label text="Description:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <Label fx:id="descriptionLabel" wrapText="true" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+        <Label text="Keywords:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <Label fx:id="keywordsLabel" wrapText="true" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+        <Label text="Created At:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+        <Label fx:id="createdAtLabel" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+
+        <Label text="Rating:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+        <Label fx:id="ratingLabel" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+    </GridPane>
+
+    <HBox alignment="center">
+        <Button text="Close" onAction="#handleClose"/>
+    </HBox>
+</VBox>

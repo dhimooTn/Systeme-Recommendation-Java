@@ -1,23 +1,37 @@
 package com.sysrec.projet_ds1_java;
 
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-
-import java.io.IOException;
+import javafx.fxml.FXMLLoader;
 
 public class LoginApplication extends Application {
     @Override
-    public void start(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(LoginApplication.class.getResource("View/LoginView.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 320, 240);
-        stage.setTitle("Login!");
-        stage.setScene(scene);
-        stage.show();
+    public void start(Stage primaryStage) throws Exception {
+        // Create the permanent root container
+        StackPane rootContainer = new StackPane();
+
+        // Load the initial login view
+        Parent loginView = FXMLLoader.load(getClass().getResource("/com/sysrec/projet_ds1_java/View/LoginView.fxml"));
+
+        // Add the login view to our container
+        rootContainer.getChildren().add(loginView);
+
+        // Create scene with purple background
+        Scene scene = new Scene(rootContainer, 1000, 600);
+        scene.setFill(javafx.scene.paint.Color.valueOf("#483d8b")); // Match your theme color
+
+        // Configure and show stage
+        primaryStage.setTitle("Login");
+        primaryStage.setScene(scene);
+        primaryStage.setMinWidth(800);
+        primaryStage.setMinHeight(600);
+        primaryStage.show();
     }
 
     public static void main(String[] args) {
-        launch();
+        launch(args);
     }
 }

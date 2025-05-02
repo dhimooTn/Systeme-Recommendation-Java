@@ -32,4 +32,8 @@ public class DBConnection {
             System.err.println("❌ Error closing SQLite connection: " + e.getMessage());
         }
     }
+
+    public static void main(String[] args) {
+        DBConnection.getConnection();
+    }
 }

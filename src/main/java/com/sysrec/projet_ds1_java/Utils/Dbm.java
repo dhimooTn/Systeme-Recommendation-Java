@@ -57,24 +57,47 @@ public class Dbm {
                 );
             """);
 
-            // === Insert Example Users ===
+            // === Insert Example Users (students + teachers) ===
             stmt.executeUpdate("""
                 INSERT INTO Users (name, email, password, role)
                 VALUES 
                     ('Alice', 'alice@student.com', 'pass123', 'student'),
                     ('Bob', 'bob@student.com', 'pass456', 'student'),
-                    ('Dr. Smith', 'smith@univ.com', 'teachpass', 'teacher');
+                    ('Charlie', 'charlie@student.com', 'pass789', 'student'),
+                    ('Diana', 'diana@student.com', 'pass000', 'student'),
+                    ('Dr. Smith', 'smith@univ.com', 'teachpass', 'teacher'),
+                    ('Prof. Johnson', 'johnson@univ.com', 'johnpass', 'teacher');
             """);
 
             // === Insert Example Resources ===
             stmt.executeUpdate("""
                 INSERT INTO Resources (title, description, difficulty, category, keywords, teacher_id, is_approved, created_at)
                 VALUES 
-                    ('Intro to CS', 'Basic concepts in CS', 'easy', 'computer_science', 'basics,CS,intro', 3, 1, DATETIME('now')),
-                    ('Economics 101', 'Microeconomics notes', 'medium', 'economic_science', 'supply,demand,macro', 3, 1, DATETIME('now'));
+                    ('Intro to CS', 'Basic concepts in CS', 'easy', 'computer_science', 'CS, intro', 5, 1, DATETIME('now')),
+                    ('Advanced Algorithms', 'Complex algorithmic strategies', 'hard', 'computer_science', 'algorithms,graphs,dp', 5, 1, DATETIME('now')),
+                    ('Microeconomics Basics', 'Intro to microeconomics', 'medium', 'economic_science', 'micro,economy,demand', 6, 1, DATETIME('now')),
+                    ('Macro Theory', 'Advanced macroeconomic theory', 'hard', 'economic_science', 'macro,gdp,inflation', 6, 1, DATETIME('now')),
+                    ('Management 101', 'Principles of management', 'easy', 'management_science', 'planning,organizing,HR', 6, 1, DATETIME('now')),
+                    ('Operations Management', 'Efficiency and processes', 'medium', 'management_science', 'process,optimization', 6, 1, DATETIME('now'));
             """);
 
-            System.out.println("✅ RessourceInteraction created and Resources updated (type column removed, category fixed)!");
+            // === Insert RessourceInteraction (students rating resources) ===
+            stmt.executeUpdate("""
+                INSERT INTO RessourceInteraction (student_id, resource_id, saved_at, rating, rated_at)
+                VALUES 
+                    (1, 1, DATETIME('now'), 5, DATETIME('now')),
+                    (1, 2, DATETIME('now'), 4, DATETIME('now')),
+                    (2, 1, DATETIME('now'), 4, DATETIME('now')),
+                    (2, 3, DATETIME('now'), 5, DATETIME('now')),
+                    (3, 4, DATETIME('now'), 3, DATETIME('now')),
+                    (3, 2, DATETIME('now'), 2, DATETIME('now')),
+                    (4, 5, DATETIME('now'), 4, DATETIME('now')),
+                    (4, 6, DATETIME('now'), 5, DATETIME('now')),
+                    (1, 6, DATETIME('now'), 3, DATETIME('now')),
+                    (2, 5, DATETIME('now'), 2, DATETIME('now'));
+            """);
+
+            System.out.println("✅ Base de données remplie avec plus d'utilisateurs, ressources et interactions !");
 
         } catch (SQLException e) {
             System.out.println("❌ " + e.getMessage());
