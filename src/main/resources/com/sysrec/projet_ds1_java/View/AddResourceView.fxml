@@ -1,53 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/17"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.sysrec.projet_ds1_java.Controller.AddResourceController"
-      spacing="15" style="-fx-padding: 20; -fx-background-color: #f5f5f5;">
+<VBox spacing="15" style="-fx-padding: 20;" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/23.0.1" fx:controller="com.sysrec.projet_ds1_java.Controller.AddResourceController">
 
-    <!-- Titre -->
-    <Label text="Ajouter une nouvelle ressource" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+    <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Add New Resource" />
 
-    <!-- Message d'erreur -->
-    <Label fx:id="errorLabel" style="-fx-text-fill: red;" visible="false"/>
+    <!-- Simple form layout -->
+    <VBox spacing="10">
+        <Label text="Title" />
+        <TextField fx:id="titleField" promptText="e.g., Introduction to Java Programming" />
 
-    <!-- Formulaire -->
-    <GridPane hgap="10" vgap="10">
-        <columnConstraints>
-            <ColumnConstraints prefWidth="100"/>
-            <ColumnConstraints prefWidth="200"/>
-        </columnConstraints>
+        <Label text="Category" />
+        <ComboBox fx:id="categoryCombo" />
 
-        <!-- Titre -->
-        <Label text="Titre*" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <TextField fx:id="titleField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+        <Label text="Description" />
+        <TextArea fx:id="descriptionArea" prefRowCount="3" promptText="Enter resource description" />
 
-        <!-- Catégorie -->
-        <Label text="Catégorie*" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="categoryCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        <Label text="Difficulty" />
+        <ComboBox fx:id="difficultyCombo" />
+        <HBox spacing="10" />
+    </VBox>
 
-        <!-- Description -->
-        <Label text="Description*" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-        <TextArea fx:id="descriptionArea" GridPane.rowIndex="2" GridPane.columnIndex="1" prefRowCount="3"/>
-
-        <!-- Difficulté -->
-        <Label text="Difficulté*" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="difficultyCombo" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
-
-        <!-- Mots-clés -->
-        <Label text="Mots-clés*" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-        <TextField fx:id="keywordsField" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
-    </GridPane>
-
-    <!-- Boutons -->
-    <HBox spacing="10" style="-fx-padding: 10 0 0 0; -fx-alignment: center-right;">
-        <Button fx:id="cancelButton" text="Annuler" onAction="#handleCancel"
-                style="-fx-background-color: #e0e0e0;"/>
-        <Button fx:id="saveButton" text="Sauvegarder" onAction="#handleSave"
-                style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+    <!-- Buttons at the bottom -->
+    <HBox spacing="10" style="-fx-alignment: center-right; -fx-padding: 10 0 0 0;">
+        <Button onAction="#handleCancel" text="Cancel" />
+        <Button onAction="#handleSubmit" style="-fx-background-color: #7c3aed; -fx-text-fill: white;" text="Submit" />
     </HBox>
 </VBox>

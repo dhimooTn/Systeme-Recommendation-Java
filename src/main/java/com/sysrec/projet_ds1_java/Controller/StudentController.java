@@ -40,7 +40,7 @@ public class StudentController {
     @FXML private TextField searchField;
     @FXML private VBox resultsContainer;
     @FXML private Label welcomeLabel;
-    @FXML private ListView<RessourceModel> recommendationsListView;
+    @FXML private HBox recommendationsHBox;  // Changed from ListView to HBox to match FXML
     @FXML private Label recommendationTitle;
     @FXML private Label errorLabel;
 
@@ -73,7 +73,7 @@ public class StudentController {
                     interactionDAO,
                     ressourceDAO
             );
-            welcomeLabel.setText("👋 Welcome back, " + user.getName() + "!");
+            welcomeLabel.setText("👋 Welcome, " + user.getName() + "!");
             loadPersonalizedData();
         }
     }
@@ -83,46 +83,48 @@ public class StudentController {
         setupTableColumns();
         resultsContainer.getChildren().clear();
 
-        if (recommendationTitle != null) {
-            recommendationTitle.setText("Recommended For You");
-        }
-
-        recommendationsListView.setCellFactory(param -> new ListCell<RessourceModel>() {
-            @Override
-            protected void updateItem(RessourceModel resource, boolean empty) {
-                super.updateItem(resource, empty);
-                if (empty || resource == null) {
-                    setGraphic(null);
-                } else {
-                    VBox card = createResourceCard(resource);
-                    setGraphic(card);
-                }
-            }
+        // Set up listener for search field
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            filterResources();
         });
     }
 
     private VBox createResourceCard(RessourceModel resource) {
         VBox card = new VBox(8);
-        card.setStyle("-fx-background-color: white; -fx-padding: 16; -fx-background-radius: 8;");
+        card.setStyle("-fx-background-color: white; -fx-padding: 16; -fx-background-radius: 8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
 
         Label titleLabel = new Label(resource.getTitle());
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #6a3093;");
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #6a3093; -fx-font-size: 14px;");
 
         UtilisateurModel teacher = utilisateurDAO.getUtilisateurParId(resource.getTeacherId());
         String teacherName = teacher != null ? teacher.getName() : "Unknown";
         Label detailsLabel = new Label(teacherName + " • " + resource.getCategory());
-        detailsLabel.setStyle("-fx-text-fill: #9c64c3;");
+        detailsLabel.setStyle("-fx-text-fill: #9c64c3; -fx-font-size: 12px;");
 
         HBox buttonBox = new HBox(8);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
 
         Button viewButton = new Button("View");
-        viewButton.setStyle("-fx-background-color: #6a3093; -fx-text-fill: white;");
+        viewButton.setStyle("-fx-background-color: #6a3093; -fx-text-fill: white; -fx-background-radius: 4;");
         viewButton.setOnAction(e -> viewDetails(resource));
 
-        Button saveButton = new Button("Save");
-        saveButton.setStyle("-fx-background-color: #d9c2f0; -fx-text-fill: #4a235a;");
-        saveButton.setOnAction(e -> saveResource(resource));
+        // Modified save button logic
+        InteractionModel existingInteraction = findInteractionForResource(resource.getResourceId());
+        boolean isSaved = existingInteraction != null && (existingInteraction.estEnregistree() || existingInteraction.estApprouvee());
+
+        Button saveButton = new Button(isSaved ? "Saved" : "Save");
+        saveButton.setStyle(isSaved ?
+                "-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 4;" :
+                "-fx-background-color: #d9c2f0; -fx-text-fill: #4a235a; -fx-background-radius: 4;");
+        saveButton.setOnAction(e -> {
+            if (isSaved) {
+                showAlert("Info", "You've already saved this resource!");
+            } else {
+                saveResource(resource);
+                saveButton.setText("Saved");
+                saveButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 4;");
+            }
+        });
 
         buttonBox.getChildren().addAll(viewButton, saveButton);
         card.getChildren().addAll(titleLabel, detailsLabel, buttonBox);
@@ -136,6 +138,8 @@ public class StudentController {
     }
 
     private void setupTableColumns() {
+        savedResourcesTable.getColumns().clear();
+
         // Status column
         TableColumn<RessourceModel, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(cellData -> {
@@ -161,10 +165,12 @@ public class StudentController {
         });
         statusCol.setPrefWidth(100);
 
+        // Title column
         TableColumn<RessourceModel, String> titleCol = new TableColumn<>("Title");
         titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
         titleCol.setPrefWidth(200);
 
+        // Teacher column
         TableColumn<RessourceModel, String> teacherCol = new TableColumn<>("Teacher");
         teacherCol.setCellValueFactory(cellData -> {
             int teacherId = cellData.getValue().getTeacherId();
@@ -173,14 +179,17 @@ public class StudentController {
         });
         teacherCol.setPrefWidth(150);
 
+        // Category column
         TableColumn<RessourceModel, String> categoryCol = new TableColumn<>("Category");
         categoryCol.setCellValueFactory(new PropertyValueFactory<>("category"));
         categoryCol.setPrefWidth(120);
 
+        // Difficulty column
         TableColumn<RessourceModel, String> difficultyCol = new TableColumn<>("Difficulty");
         difficultyCol.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
         difficultyCol.setPrefWidth(100);
 
+        // Actions column (unchanged)
         TableColumn<RessourceModel, Void> actionsCol = new TableColumn<>("Actions");
         actionsCol.setCellFactory(col -> new TableCell<>() {
             private final Button doneButton = new Button("✓ Done");
@@ -189,11 +198,19 @@ public class StudentController {
             private final HBox actionButtons = new HBox(5, doneButton, deleteButton, rateButton);
 
             {
-                doneButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
-                deleteButton.setStyle("-fx-background-color: #F44336; -fx-text-fill: white;");
-                rateButton.setStyle("-fx-background-color: #FFC107; -fx-text-fill: black;");
+                doneButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 4;");
+                deleteButton.setStyle("-fx-background-color: #F44336; -fx-text-fill: white; -fx-background-radius: 4;");
+                rateButton.setStyle("-fx-background-color: #FFC107; -fx-text-fill: black; -fx-background-radius: 4;");
 
-                doneButton.setOnAction(e -> markResourceAsCompleted(getTableView().getItems().get(getIndex())));
+                doneButton.setOnAction(e -> {
+                    RessourceModel resource = getTableView().getItems().get(getIndex());
+                    if (!resource.isApproved()) {
+                        markResourceAsCompleted(resource);
+                    } else {
+                        showAlert("Info", "This resource is already marked as completed!");
+                    }
+                });
+
                 deleteButton.setOnAction(e -> removeSavedResource(getTableView().getItems().get(getIndex())));
                 rateButton.setOnAction(e -> showRatingWindow(getTableView().getItems().get(getIndex())));
             }
@@ -201,12 +218,24 @@ public class StudentController {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(empty ? null : actionButtons);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    RessourceModel resource = getTableView().getItems().get(getIndex());
+                    if (resource.isApproved()) {
+                        doneButton.setDisable(true);
+                        doneButton.setStyle("-fx-background-color: #a5d6a7; -fx-text-fill: white;");
+                    } else {
+                        doneButton.setDisable(false);
+                        doneButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+                    }
+                    setGraphic(actionButtons);
+                }
             }
         });
         actionsCol.setPrefWidth(200);
 
-        savedResourcesTable.getColumns().setAll(statusCol, titleCol, teacherCol, categoryCol, difficultyCol, actionsCol);
+        savedResourcesTable.getColumns().addAll(statusCol, titleCol, teacherCol, categoryCol, difficultyCol, actionsCol);
         savedResourcesTable.setItems(savedResources);
     }
 
@@ -217,24 +246,20 @@ public class StudentController {
         List<InteractionModel> interactions = interactionDAO.getInteractionsParEtudiant(currentStudentId);
 
         for (InteractionModel interaction : interactions) {
-            if (interaction.estEnregistree() || interaction.estApprouvee()) {
+            if (interaction.getAvis() == 2 || interaction.getAvis() == 1) {
                 RessourceModel resource = ressourceDAO.getRessourceParId(interaction.getRessourceId());
                 if (resource != null) {
-                    // Mark completed resources
-                    if (interaction.estApprouvee()) {
-                        resource.setApproved(true);
-                    }
+                    resource.setApproved(interaction.getAvis() == 1);
                     savedResources.add(resource);
                 }
             }
         }
 
-        // Sort by completion status (completed first) then by title
         savedResources.sort((r1, r2) -> {
             boolean r1Completed = r1.isApproved();
             boolean r2Completed = r2.isApproved();
             if (r1Completed == r2Completed) {
-                return r1.getTitle().compareTo(r2.getTitle());
+                return r1.getTitle().compareToIgnoreCase(r2.getTitle());
             }
             return r1Completed ? -1 : 1;
         });
@@ -244,13 +269,13 @@ public class StudentController {
         if (currentStudentId == 0) return;
 
         recommendedResources.clear();
+        recommendationsHBox.getChildren().clear();  // Clear existing recommendations
+        recommendationTitle.setText("Recommended For You");
 
         try {
-            // Get recommendations from both approaches
             List<RessourceModel> userBasedRecs = recommandationService.getUserBasedRecommendations(currentStudentId);
             List<RessourceModel> itemBasedRecs = recommandationService.getItemBasedRecommendations(currentStudentId);
 
-            // Filter out already saved resources
             List<Integer> savedResourceIds = savedResources.stream()
                     .map(RessourceModel::getResourceId)
                     .collect(Collectors.toList());
@@ -263,24 +288,27 @@ public class StudentController {
                     .filter(r -> !savedResourceIds.contains(r.getResourceId()))
                     .collect(Collectors.toList());
 
-            // Combine with weighted scores
             Map<RessourceModel, Double> combinedScores = new HashMap<>();
-            addToRecommendations(combinedScores, userBasedRecs, 0.7); // Higher weight for user-based
+            addToRecommendations(combinedScores, userBasedRecs, 0.7);
             addToRecommendations(combinedScores, itemBasedRecs, 0.3);
 
-            // Get top recommendations
             List<RessourceModel> topRecommendations = combinedScores.entrySet().stream()
                     .sorted(Map.Entry.<RessourceModel, Double>comparingByValue().reversed())
-                    .limit(5) // Show top 5 recommendations
+                    .limit(5)
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toList());
 
-            recommendedResources.addAll(topRecommendations);
-            recommendationsListView.setItems(recommendedResources);
+            if (topRecommendations.isEmpty()) {
+                loadPopularResourcesAsFallback();
+            } else {
+                topRecommendations.forEach(resource -> {
+                    VBox card = createResourceCard(resource);
+                    recommendationsHBox.getChildren().add(card);
+                });
+            }
 
         } catch (Exception e) {
-            showAlert("Recommendation Error", "Could not load personalized recommendations: " + e.getMessage());
-            // Fallback: show popular resources
+            e.printStackTrace();
             loadPopularResourcesAsFallback();
         }
     }
@@ -294,10 +322,22 @@ public class StudentController {
                 .limit(5)
                 .collect(Collectors.toList());
 
-        recommendedResources.addAll(popularResources);
-        recommendationsListView.setItems(recommendedResources);
-
+        popularResources.forEach(resource -> {
+            VBox card = createResourceCard(resource);
+            recommendationsHBox.getChildren().add(card);
+        });
         recommendationTitle.setText("Popular Resources");
+    }
+
+    private double getAverageRating(int resourceId) {
+        List<InteractionModel> interactions = interactionDAO.getInteractionsParRessource(resourceId);
+        if (interactions.isEmpty()) return 0;
+
+        double sum = interactions.stream()
+                .filter(i -> i.getAvis() > 0)
+                .mapToInt(InteractionModel::getAvis)
+                .sum();
+        return sum / interactions.stream().filter(i -> i.getAvis() > 0).count();
     }
 
     private void addToRecommendations(Map<RessourceModel, Double> combined, List<RessourceModel> recs, double weight) {
@@ -306,16 +346,6 @@ public class StudentController {
             double score = (recs.size() - i) * weight;
             combined.merge(res, score, Double::sum);
         }
-    }
-
-    private double getAverageRating(int resourceId) {
-        List<InteractionModel> interactions = interactionDAO.getInteractionsParRessource(resourceId);
-        if (interactions.isEmpty()) return 0;
-
-        double sum = interactions.stream()
-                .mapToInt(InteractionModel::getAvis)
-                .sum();
-        return sum / interactions.size();
     }
 
     private void markResourceAsCompleted(RessourceModel resource) {
@@ -327,6 +357,7 @@ public class StudentController {
             savedResourcesTable.refresh();
             showAlert("Success", "Resource marked as completed!");
             updateCounters();
+            loadRecommendedResources();
         }
     }
 
@@ -337,6 +368,7 @@ public class StudentController {
             savedResources.remove(resource);
             showAlert("Success", "Resource removed from your list!");
             updateCounters();
+            loadRecommendedResources();
         }
     }
 
@@ -364,9 +396,15 @@ public class StudentController {
                 2
         );
         interactionDAO.ajouterInteraction(newInteraction);
+        resource.setApproved(false);
         savedResources.add(resource);
         showAlert("Success", "Resource saved to your list!");
         updateCounters();
+        loadRecommendedResources();
+
+        if (!searchField.getText().isEmpty()) {
+            filterResources();
+        }
     }
 
     private void updateCounters() {
@@ -392,14 +430,17 @@ public class StudentController {
         stage.setTitle("Rate: " + resource.getTitle());
 
         VBox root = new VBox(15);
-        root.setStyle("-fx-padding: 20;");
+        root.setStyle("-fx-padding: 20; -fx-background-color: white;");
 
         Label prompt = new Label("How would you rate this resource?");
+        prompt.setStyle("-fx-font-weight: bold; -fx-text-fill: #4a235a;");
+
         Spinner<Integer> ratingSpinner = new Spinner<>(1, 5, 3);
+        ratingSpinner.setStyle("-fx-font-size: 14px;");
         ratingSpinner.setEditable(true);
 
         Button submitButton = new Button("Submit Rating");
-        submitButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+        submitButton.setStyle("-fx-background-color: #6a3093; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4;");
         submitButton.setOnAction(e -> {
             int rating = ratingSpinner.getValue();
             saveRating(resource, rating);
@@ -407,6 +448,7 @@ public class StudentController {
         });
 
         root.getChildren().addAll(prompt, ratingSpinner, submitButton);
+        root.setAlignment(Pos.CENTER);
         stage.setScene(new Scene(root, 300, 150));
         stage.show();
     }
@@ -436,7 +478,7 @@ public class StudentController {
         stage.setTitle(resource.getTitle());
 
         VBox root = new VBox(10);
-        root.setStyle("-fx-padding: 20;");
+        root.setStyle("-fx-padding: 20; -fx-background-color: white;");
 
         UtilisateurModel teacher = utilisateurDAO.getUtilisateurParId(resource.getTeacherId());
         String teacherName = teacher != null ? teacher.getName() : "Unknown";
@@ -449,32 +491,51 @@ public class StudentController {
         }
 
         Label titleLabel = new Label(resource.getTitle());
-        titleLabel.setStyle("-fx-font-size: 16; -fx-font-weight: bold;");
+        titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #6a3093;");
 
         Label teacherLabel = new Label("By: " + teacherName);
+        teacherLabel.setStyle("-fx-text-fill: #4a235a;");
+
         Label categoryLabel = new Label("Category: " + resource.getCategory());
+        categoryLabel.setStyle("-fx-text-fill: #4a235a;");
+
         Label difficultyLabel = new Label("Difficulty: " + resource.getDifficulty());
+        difficultyLabel.setStyle("-fx-text-fill: #4a235a;");
+
         Label statusLabel = new Label("Your status: " + status);
-        Label ratingLabel = new Label("Rating: ★ " + String.format("%.1f", getAverageRating(resource.getResourceId())));
+        statusLabel.setStyle("-fx-text-fill: #4a235a;");
+
+        double avgRating = getAverageRating(resource.getResourceId());
+        Label ratingLabel = new Label("Rating: " + (avgRating > 0 ?
+                String.format("★ %.1f/5", avgRating) : "Not rated yet"));
+        ratingLabel.setStyle("-fx-text-fill: #4a235a;");
 
         TextArea descriptionArea = new TextArea(resource.getDescription());
         descriptionArea.setEditable(false);
         descriptionArea.setWrapText(true);
         descriptionArea.setPrefHeight(150);
+        descriptionArea.setStyle("-fx-border-color: #d9c2f0;");
 
         HBox buttonBox = new HBox(10);
-        Button saveButton = new Button("Save Resource");
-        Button rateButton = new Button("Rate Resource");
-        Button closeButton = new Button("Close");
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
 
+        Button saveButton = new Button(status.equals("Saved") ? "Already Saved" : "Save Resource");
+        saveButton.setStyle("-fx-background-color: #9c64c3; -fx-text-fill: white; -fx-background-radius: 4;");
+        saveButton.setDisable(status.equals("Saved") || status.equals("Completed"));
         saveButton.setOnAction(e -> {
             saveResource(resource);
             stage.close();
         });
+
+        Button rateButton = new Button("Rate Resource");
+        rateButton.setStyle("-fx-background-color: #FFC107; -fx-text-fill: black; -fx-background-radius: 4;");
         rateButton.setOnAction(e -> {
             stage.close();
             showRatingWindow(resource);
         });
+
+        Button closeButton = new Button("Close");
+        closeButton.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: black; -fx-background-radius: 4;");
         closeButton.setOnAction(e -> stage.close());
 
         buttonBox.getChildren().addAll(saveButton, rateButton, closeButton);
@@ -491,7 +552,9 @@ public class StudentController {
         String query = searchField.getText().trim().toLowerCase();
         resultsContainer.getChildren().clear();
 
-        if (query.isEmpty()) return;
+        if (query.isEmpty()) {
+            return;
+        }
 
         List<RessourceModel> filtered = ressourceDAO.getToutesLesRessources().stream()
                 .filter(resource -> matchesSearch(resource, query))
@@ -533,10 +596,10 @@ public class StudentController {
 
         for (RessourceModel resource : results) {
             VBox card = new VBox(8);
-            card.setStyle("-fx-border-color: #ddd; -fx-border-radius: 5; -fx-padding: 10;");
+            card.setStyle("-fx-background-color: white; -fx-padding: 16; -fx-background-radius: 8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 2);");
 
             Label titleLabel = new Label(resource.getTitle());
-            titleLabel.setStyle("-fx-font-weight: bold;");
+            titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #6a3093;");
 
             UtilisateurModel teacher = utilisateurDAO.getUtilisateurParId(resource.getTeacherId());
             String teacherName = teacher != null ? teacher.getName() : "Unknown";
@@ -545,18 +608,66 @@ public class StudentController {
                     teacherName,
                     resource.getCategory(),
                     resource.getDifficulty()));
+            detailsLabel.setStyle("-fx-text-fill: #9c64c3;");
 
             HBox buttonBox = new HBox(10);
             Button viewButton = new Button("View");
-            Button saveButton = new Button("Save");
-
+            viewButton.setStyle("-fx-background-color: #6a3093; -fx-text-fill: white; -fx-background-radius: 4;");
             viewButton.setOnAction(e -> viewDetails(resource));
+
+            Button saveButton = new Button("Save");
+            saveButton.setStyle("-fx-background-color: #d9c2f0; -fx-text-fill: #4a235a; -fx-background-radius: 4;");
             saveButton.setOnAction(e -> saveResource(resource));
 
             buttonBox.getChildren().addAll(viewButton, saveButton);
             card.getChildren().addAll(titleLabel, detailsLabel, buttonBox);
             resultsContainer.getChildren().add(card);
         }
+    }
+
+    @FXML
+    private void openFilters() {
+        Stage stage = new Stage();
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setTitle("Search Filters");
+
+        VBox root = new VBox(15);
+        root.setStyle("-fx-padding: 20; -fx-background-color: white;");
+
+        Label titleLabel = new Label("Search Filters");
+        titleLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #6a3093;");
+
+        CheckBox titleCheck = new CheckBox("Search in titles");
+        titleCheck.setSelected(filterByTitle);
+
+        CheckBox categoryCheck = new CheckBox("Search in categories");
+        categoryCheck.setSelected(filterByCategory);
+
+        CheckBox teacherCheck = new CheckBox("Search in teacher names");
+        teacherCheck.setSelected(filterByTeacher);
+
+        HBox buttonBox = new HBox(10);
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+
+        Button applyButton = new Button("Apply");
+        applyButton.setStyle("-fx-background-color: #6a3093; -fx-text-fill: white; -fx-background-radius: 4;");
+        applyButton.setOnAction(e -> {
+            filterByTitle = titleCheck.isSelected();
+            filterByCategory = categoryCheck.isSelected();
+            filterByTeacher = teacherCheck.isSelected();
+            stage.close();
+            filterResources();
+        });
+
+        Button cancelButton = new Button("Cancel");
+        cancelButton.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: black; -fx-background-radius: 4;");
+        cancelButton.setOnAction(e -> stage.close());
+
+        buttonBox.getChildren().addAll(cancelButton, applyButton);
+        root.getChildren().addAll(titleLabel, titleCheck, categoryCheck, teacherCheck, buttonBox);
+
+        stage.setScene(new Scene(root, 300, 200));
+        stage.show();
     }
 
     @FXML
@@ -581,21 +692,21 @@ public class StudentController {
             newRoot.setScaleY(0.95);
             mainContainer.getChildren().add(newRoot);
 
-            FadeTransition fadeOut = new FadeTransition(Duration.millis(500), currentRoot);
+            FadeTransition fadeOut = new FadeTransition(Duration.millis(300), currentRoot);
             fadeOut.setFromValue(1.0);
             fadeOut.setToValue(0.0);
 
-            ScaleTransition scaleDown = new ScaleTransition(Duration.millis(500), currentRoot);
+            ScaleTransition scaleDown = new ScaleTransition(Duration.millis(300), currentRoot);
             scaleDown.setFromX(1.0);
             scaleDown.setFromY(1.0);
             scaleDown.setToX(0.9);
             scaleDown.setToY(0.9);
 
-            FadeTransition fadeIn = new FadeTransition(Duration.millis(500), newRoot);
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(300), newRoot);
             fadeIn.setFromValue(0.0);
             fadeIn.setToValue(1.0);
 
-            ScaleTransition scaleUp = new ScaleTransition(Duration.millis(500), newRoot);
+            ScaleTransition scaleUp = new ScaleTransition(Duration.millis(300), newRoot);
             scaleUp.setFromX(0.95);
             scaleUp.setFromY(0.95);
             scaleUp.setToX(1.0);
@@ -631,44 +742,6 @@ public class StudentController {
             System.err.println("Critical error: Could not load login view");
             e.printStackTrace();
         }
-    }
-
-    @FXML
-    private void openFilters() {
-        Stage stage = new Stage();
-        stage.initModality(Modality.APPLICATION_MODAL);
-        stage.setTitle("Search Filters");
-
-        VBox root = new VBox(15);
-        root.setStyle("-fx-padding: 20;");
-
-        CheckBox titleCheck = new CheckBox("Search in titles");
-        CheckBox categoryCheck = new CheckBox("Search in categories");
-        CheckBox teacherCheck = new CheckBox("Search in teacher names");
-
-        titleCheck.setSelected(filterByTitle);
-        categoryCheck.setSelected(filterByCategory);
-        teacherCheck.setSelected(filterByTeacher);
-
-        Button applyButton = new Button("Apply Filters");
-        applyButton.setOnAction(e -> {
-            filterByTitle = titleCheck.isSelected();
-            filterByCategory = categoryCheck.isSelected();
-            filterByTeacher = teacherCheck.isSelected();
-            stage.close();
-            filterResources();
-        });
-
-        root.getChildren().addAll(
-                new Label("Select search filters:"),
-                titleCheck,
-                categoryCheck,
-                teacherCheck,
-                applyButton
-        );
-
-        stage.setScene(new Scene(root, 300, 200));
-        stage.show();
     }
 
     private void showAlert(String title, String message) {

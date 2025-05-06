@@ -27,7 +27,7 @@ public class Dbm {
                 );
             """);
 
-            // === Create Resources Table ===
+            // === Create Resources Table with is_private ===
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS Resources (
                     resource_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +38,7 @@ public class Dbm {
                     keywords VARCHAR(255),
                     teacher_id INTEGER,
                     is_approved BOOLEAN,
+                    is_private BOOLEAN DEFAULT 0,
                     created_at DATETIME,
                     FOREIGN KEY (teacher_id) REFERENCES Users(user_id)
                 );
@@ -69,16 +70,16 @@ public class Dbm {
                     ('Prof. Johnson', 'johnson@univ.com', 'johnpass', 'teacher');
             """);
 
-            // === Insert Example Resources ===
+            // === Insert Example Resources with is_private column ===
             stmt.executeUpdate("""
-                INSERT INTO Resources (title, description, difficulty, category, keywords, teacher_id, is_approved, created_at)
+                INSERT INTO Resources (title, description, difficulty, category, keywords, teacher_id, is_approved, is_private, created_at)
                 VALUES 
-                    ('Intro to CS', 'Basic concepts in CS', 'easy', 'computer_science', 'CS, intro', 5, 1, DATETIME('now')),
-                    ('Advanced Algorithms', 'Complex algorithmic strategies', 'hard', 'computer_science', 'algorithms,graphs,dp', 5, 1, DATETIME('now')),
-                    ('Microeconomics Basics', 'Intro to microeconomics', 'medium', 'economic_science', 'micro,economy,demand', 6, 1, DATETIME('now')),
-                    ('Macro Theory', 'Advanced macroeconomic theory', 'hard', 'economic_science', 'macro,gdp,inflation', 6, 1, DATETIME('now')),
-                    ('Management 101', 'Principles of management', 'easy', 'management_science', 'planning,organizing,HR', 6, 1, DATETIME('now')),
-                    ('Operations Management', 'Efficiency and processes', 'medium', 'management_science', 'process,optimization', 6, 1, DATETIME('now'));
+                    ('Intro to CS', 'Basic concepts in CS', 'easy', 'computer_science', 'CS, intro', 5, 1, 0, DATETIME('now')),
+                    ('Advanced Algorithms', 'Complex algorithmic strategies', 'hard', 'computer_science', 'algorithms,graphs,dp', 5, 1, 1, DATETIME('now')),
+                    ('Microeconomics Basics', 'Intro to microeconomics', 'medium', 'economic_science', 'micro,economy,demand', 6, 1, 0, DATETIME('now')),
+                    ('Macro Theory', 'Advanced macroeconomic theory', 'hard', 'economic_science', 'macro,gdp,inflation', 6, 1, 1, DATETIME('now')),
+                    ('Management 101', 'Principles of management', 'easy', 'management_science', 'planning,organizing,HR', 6, 1, 0, DATETIME('now')),
+                    ('Operations Management', 'Efficiency and processes', 'medium', 'management_science', 'process,optimization', 6, 1, 1, DATETIME('now'));
             """);
 
             // === Insert RessourceInteraction (students rating resources) ===
@@ -97,7 +98,7 @@ public class Dbm {
                     (2, 5, DATETIME('now'), 2, DATETIME('now'));
             """);
 
-            System.out.println("✅ Base de données remplie avec plus d'utilisateurs, ressources et interactions !");
+            System.out.println("✅ Base de données remplie avec la colonne is_private !");
 
         } catch (SQLException e) {
             System.out.println("❌ " + e.getMessage());

@@ -15,7 +15,8 @@ public class InteractionDAO {
     }
 
     public void ajouterInteraction(InteractionModel interaction) {
-        String sql = "INSERT INTO RessourceInteraction (student_id, resource_id, avis) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO RessourceInteraction (student_id, resource_id, rating) VALUES (?, ?, ?)";
+
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, interaction.getEtudiantId());
             stmt.setInt(2, interaction.getRessourceId());

@@ -23,7 +23,7 @@ public class LoginApplication extends Application {
         Scene scene = new Scene(rootContainer, 1000, 600);
         scene.setFill(javafx.scene.paint.Color.valueOf("#483d8b")); // Match your theme color
 
-        // Configure and show stage
+        // Configure and show stage 
         primaryStage.setTitle("Login");
         primaryStage.setScene(scene);
         primaryStage.setMinWidth(800);

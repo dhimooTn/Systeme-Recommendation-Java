@@ -4,20 +4,21 @@ import com.sysrec.projet_ds1_java.Model.RessourceModel;
 import com.sysrec.projet_ds1_java.Utils.DBConnection;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RessourceDAO {
-    private Connection connection;
+    private final Connection connection;
 
     public RessourceDAO() {
         this.connection = DBConnection.getConnection();
     }
 
     public void ajouterRessource(RessourceModel ressource) {
-        String sql = "INSERT INTO Resources (title, description, difficulty, category, keywords, teacher_id, is_approved, created_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = """
+            INSERT INTO Resources (title, description, difficulty, category, keywords, teacher_id, is_approved, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """;
         try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, ressource.getTitle());
             stmt.setString(2, ressource.getDescription());
@@ -35,7 +36,7 @@ public class RessourceDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de l'ajout de la ressource : " + e.getMessage());
         }
     }
 
@@ -43,22 +44,13 @@ public class RessourceDAO {
         String sql = "SELECT * FROM Resources WHERE resource_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return new RessourceModel(
-                        rs.getInt("resource_id"),
-                        rs.getString("title"),
-                        rs.getString("description"),
-                        rs.getString("difficulty"),
-                        rs.getString("category"),
-                        rs.getString("keywords"),
-                        rs.getInt("teacher_id"),
-                        rs.getBoolean("is_approved"),
-                        rs.getTimestamp("created_at").toLocalDateTime()
-                );
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return extractRessource(rs);
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de la récupération de la ressource par ID : " + e.getMessage());
         }
         return null;
     }
@@ -69,20 +61,10 @@ public class RessourceDAO {
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                ressources.add(new RessourceModel(
-                        rs.getInt("resource_id"),
-                        rs.getString("title"),
-                        rs.getString("description"),
-                        rs.getString("difficulty"),
-                        rs.getString("category"),
-                        rs.getString("keywords"),
-                        rs.getInt("teacher_id"),
-                        rs.getBoolean("is_approved"),
-                        rs.getTimestamp("created_at").toLocalDateTime()
-                ));
+                ressources.add(extractRessource(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de la récupération de toutes les ressources : " + e.getMessage());
         }
         return ressources;
     }
@@ -90,30 +72,23 @@ public class RessourceDAO {
     public List<RessourceModel> getRessourcesApprouvees() {
         List<RessourceModel> ressources = new ArrayList<>();
         String sql = "SELECT * FROM Resources WHERE is_approved = true";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                ressources.add(new RessourceModel(
-                        rs.getInt("resource_id"),
-                        rs.getString("title"),
-                        rs.getString("description"),
-                        rs.getString("difficulty"),
-                        rs.getString("category"),
-                        rs.getString("keywords"),
-                        rs.getInt("teacher_id"),
-                        true,
-                        rs.getTimestamp("created_at").toLocalDateTime()
-                ));
+                ressources.add(extractRessource(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de la récupération des ressources approuvées : " + e.getMessage());
         }
         return ressources;
     }
 
     public void modifierRessource(RessourceModel ressource) {
-        String sql = "UPDATE Resources SET title = ?, description = ?, difficulty = ?, " +
-                "category = ?, keywords = ?, is_approved = ? WHERE resource_id = ?";
+        String sql = """
+            UPDATE Resources
+            SET title = ?, description = ?, difficulty = ?, category = ?, keywords = ?, is_approved = ?
+            WHERE resource_id = ?
+        """;
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, ressource.getTitle());
             stmt.setString(2, ressource.getDescription());
@@ -124,7 +99,7 @@ public class RessourceDAO {
             stmt.setInt(7, ressource.getResourceId());
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de la modification de la ressource : " + e.getMessage());
         }
     }
 
@@ -134,7 +109,7 @@ public class RessourceDAO {
             stmt.setInt(1, id);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de la suppression de la ressource : " + e.getMessage());
         }
     }
 
@@ -143,23 +118,32 @@ public class RessourceDAO {
         String sql = "SELECT * FROM Resources WHERE teacher_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, teacherId);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                ressources.add(new RessourceModel(
-                        rs.getInt("resource_id"),
-                        rs.getString("title"),
-                        rs.getString("description"),
-                        rs.getString("difficulty"),
-                        rs.getString("category"),
-                        rs.getString("keywords"),
-                        rs.getInt("teacher_id"),
-                        rs.getBoolean("is_approved"),
-                        rs.getTimestamp("created_at").toLocalDateTime()
-                ));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    ressources.add(extractRessource(rs));
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Erreur lors de la récupération des ressources par enseignant : " + e.getMessage());
         }
         return ressources;
     }
+
+    private RessourceModel extractRessource(ResultSet rs) throws SQLException {
+        return new RessourceModel(
+                rs.getInt("resource_id"),
+                rs.getString("title"),
+                rs.getString("description"),
+                rs.getString("difficulty"),
+                rs.getString("category"),
+                rs.getString("keywords"),
+                rs.getInt("teacher_id"),
+                rs.getBoolean("is_approved"),
+                rs.getTimestamp("created_at").toLocalDateTime(),
+                rs.getString("format"),
+                rs.getString("tags"),
+                rs.getString("url")
+        );
+    }
+
 }
