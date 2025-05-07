@@ -115,7 +115,7 @@ public class LoginController {
                 studentController.setCurrentStudent(utilisateur.getUserId());
             } else if (utilisateur.getRole().equals("teacher")) {
                 TeacherController teacherController = loader.getController();
-                teacherController.setCurrentTeacher(utilisateur.getUserId());
+                teacherController.setCurrentTeacherId(utilisateur.getUserId());
             }
 
             Scene currentScene = root.getScene();

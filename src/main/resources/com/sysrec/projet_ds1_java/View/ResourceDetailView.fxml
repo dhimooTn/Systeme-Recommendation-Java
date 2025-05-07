@@ -1,46 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.geometry.Insets?>
 
-<?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
-<VBox spacing="10" style="-fx-padding: 20;" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.sysrec.projet_ds1_java.Controller.ResourceDetailController">
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 
-    <Label text="Resource Details" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+<VBox spacing="10" style="-fx-padding: 20;" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/23.0.1" fx:controller="com.sysrec.projet_ds1_java.Controller.ResourceDetailController">
+
+    <Label style="-fx-font-size: 20px; -fx-font-weight: bold;" text="Resource Details" />
 
     <GridPane hgap="10" vgap="8">
-        <Label text="Title:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <TextField fx:id="titleField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+        <Label text="Title:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <TextField fx:id="titleField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-        <Label text="Category:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-        <TextField fx:id="categoryField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        <Label text="Category:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <TextField fx:id="categoryField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-        <Label text="Difficulty:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-        <TextField fx:id="difficultyField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+        <Label text="Difficulty:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+        <TextField fx:id="difficultyField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-        <Label text="Type:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-        <TextField fx:id="typeField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <Label text="Description:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+        <TextArea fx:id="descriptionField" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-        <Label text="Description:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-        <TextArea fx:id="descriptionField" wrapText="true" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+        <Label text="Rating:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+        <Label fx:id="ratingLabel" GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
+        <Label text="Total Savings:" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+        <Label fx:id="studentCountLabel" GridPane.columnIndex="1" GridPane.rowIndex="6" />
 
-        <Label text="Rating:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-        <Label fx:id="ratingLabel" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
-        <Label text="total Savings :" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-        <Label fx:id="studentCountLabel" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
-
-
-
+        <Label text="Statut:" GridPane.columnIndex="0" GridPane.rowIndex="7" />
+        <ComboBox fx:id="statusComboBox" GridPane.columnIndex="1" GridPane.rowIndex="7">
+            <items>
+                <FXCollections fx:factory="observableArrayList">
+                    <String fx:value="Private" />
+                    <String fx:value="Public" />
+                </FXCollections>
+            </items>
+        </ComboBox>
+      <columnConstraints>
+         <ColumnConstraints />
+         <ColumnConstraints />
+      </columnConstraints>
+      <rowConstraints>
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+         <RowConstraints />
+      </rowConstraints>
     </GridPane>
 
-
-    <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
-        <Button text="Delete" onAction="#handleDelete" />
-        <Button text="Modify" onAction="#handleModify" />
+    <HBox alignment="CENTER_RIGHT" spacing="10" style="-fx-padding: 10 0 0 0;">
+        <Button onAction="#handleDelete" text="Delete" />
+        <Button onAction="#handleModify" text="Modify" />
     </HBox>
 
 </VBox>
-

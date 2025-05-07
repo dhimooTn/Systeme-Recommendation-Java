@@ -6,29 +6,30 @@ import java.io.IOException;
 
 public class DbToCsv {
     public static void main(String[] args) {
-        // Utilisation de DBConnection pour obtenir la connexion à la base de données
         String csvFile = "src/main/resources/database/interactions.csv";
-
 
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();
              FileWriter writer = new FileWriter(csvFile)) {
 
-            // Création du fichier CSV avec l'en-tête
-            writer.append("userId,itemId,rating\n");
+            // Updated header to include all required fields
+            writer.append("userId,itemId,rating,category,keywords\n");
 
-            // Récupération des interactions
-            String query = "SELECT student_id, resource_id, rating FROM RessourceInteraction";
+            // Updated query to include category and keywords
+            String query = "SELECT ri.student_id, ri.resource_id, ri.rating, r.category, r.keywords " +
+                    "FROM RessourceInteraction ri " +
+                    "JOIN Resources r ON ri.resource_id = r.resource_id";
             ResultSet rs = stmt.executeQuery(query);
 
-            // Boucle sur les résultats et écriture dans le CSV
             while (rs.next()) {
                 int userId = rs.getInt("student_id");
                 int resourceId = rs.getInt("resource_id");
                 int rating = rs.getInt("rating");
+                String category = rs.getString("category");
+                String keywords = rs.getString("keywords");
 
-                // Ajout des données au fichier CSV
-                writer.append(userId + "," + resourceId + "," + rating + "\n");
+                writer.append(userId + "," + resourceId + "," + rating + "," +
+                        category + "," + keywords + "\n");
             }
 
             System.out.println("✅ Exportation des interactions vers CSV réussie : " + csvFile);

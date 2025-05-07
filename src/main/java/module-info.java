@@ -19,4 +19,6 @@ module com.sysrec.projet_ds1_java {
     exports com.sysrec.projet_ds1_java.Controller;
     exports com.sysrec.projet_ds1_java.Utils;
     exports com.sysrec.projet_ds1_java.Service;
+    exports com.sysrec.projet_ds1_java.Model;
+    exports com.sysrec.projet_ds1_java.Dao;
 }

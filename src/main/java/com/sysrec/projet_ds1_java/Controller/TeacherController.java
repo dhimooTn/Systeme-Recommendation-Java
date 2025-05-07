@@ -1,124 +1,74 @@
 package com.sysrec.projet_ds1_java.Controller;
 
 import com.sysrec.projet_ds1_java.Dao.RessourceDAO;
-import com.sysrec.projet_ds1_java.Dao.InteractionDAO;
-import com.sysrec.projet_ds1_java.Dao.UtilisateurDAO;
-import com.sysrec.projet_ds1_java.Model.InteractionModel;
 import com.sysrec.projet_ds1_java.Model.RessourceModel;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 
 public class TeacherController {
+
+    @FXML private TableView<RessourceModel> resourceTable;
+    @FXML private TextField searchField;
     @FXML private Label studentCountLabel;
     @FXML private Label resourceCountLabel;
     @FXML private Label averageRatingLabel;
-    @FXML private TextField searchField;
-    @FXML private TableView<RessourceModel> resourceTable;
+    @FXML private Label welcomeLabel;
+    @FXML private Label welcomeBackLabel;
+
     @FXML private TableColumn<RessourceModel, String> titleCol;
     @FXML private TableColumn<RessourceModel, String> categoryCol;
     @FXML private TableColumn<RessourceModel, String> difficultyCol;
     @FXML private TableColumn<RessourceModel, Double> ratingCol;
     @FXML private TableColumn<RessourceModel, Void> actionCol;
 
-    private final RessourceDAO ressourceDAO = new RessourceDAO();
-    private final InteractionDAO interactionDAO = new InteractionDAO();
-    private final UtilisateurDAO utilisateurDAO = new UtilisateurDAO();
-    private ObservableList<RessourceModel> resources = FXCollections.observableArrayList();
+    private ObservableList<RessourceModel> resourcesList = FXCollections.observableArrayList();
+    private RessourceDAO ressourceDAO;
     private int currentTeacherId;
+    private String teacherName;
 
-    public void setCurrentTeacher(int teacherId) {
-        this.currentTeacherId = teacherId;
-        loadResources();
-        updateStats();
-    }
-
-    @FXML
     public void initialize() {
-        titleCol.setCellValueFactory(cellData -> cellData.getValue().titleProperty());
-        categoryCol.setCellValueFactory(cellData -> cellData.getValue().categoryProperty());
-        difficultyCol.setCellValueFactory(cellData -> cellData.getValue().difficultyProperty());
-        ratingCol.setCellValueFactory(cellData -> cellData.getValue().averageRatingProperty().asObject());
+        ressourceDAO = new RessourceDAO();
 
-        resourceTable.setItems(resources);
-        addActionButtonsToTable();
-    }
+        // Initialize table columns
+        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+        categoryCol.setCellValueFactory(new PropertyValueFactory<>("category"));
+        difficultyCol.setCellValueFactory(new PropertyValueFactory<>("difficulty"));
+        ratingCol.setCellValueFactory(cellData ->
+                new SimpleDoubleProperty(cellData.getValue().getAverageRating()).asObject());
 
-    private void loadResources() {
-        resources.clear();
-        List<RessourceModel> teacherResources = ressourceDAO.getRessourcesParEnseignant(currentTeacherId);
-        resources.addAll(teacherResources);
-
-        // Calculate average ratings for each resource
-        resources.forEach(resource -> {
-            List<InteractionModel> interactions = interactionDAO.getInteractionsParRessource(resource.getResourceId());
-            double average = interactions.stream()
-                    .mapToInt(InteractionModel::getAvis)
-                    .average()
-                    .orElse(0.0);
-            resource.setAverageRating(average);
-        });
-    }
-
-    private void updateStats() {
-        int totalResources = resources.size();
-        double totalRating = resources.stream()
-                .mapToDouble(RessourceModel::getAverageRating)
-                .sum();
-        double averageRating = totalResources > 0 ? totalRating / totalResources : 0.0;
-
-        int totalStudents = utilisateurDAO.countStudents();
-
-        studentCountLabel.setText(String.valueOf(totalStudents));
-        resourceCountLabel.setText(String.valueOf(totalResources));
-        averageRatingLabel.setText(String.format("%.1f", averageRating));
-    }
-
-    @FXML
-    public void onAddResource() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sysrec/projet_ds1_java/View/AddResourceView.fxml"));
-            Scene scene = new Scene(loader.load());
-
-            AddResourceController controller = loader.getController();
-            controller.setTeacherController(this);
-            controller.setCurrentTeacherId(currentTeacherId);
-
-            Stage stage = new Stage();
-            stage.setTitle("Add Resource");
-            stage.setScene(scene);
-            stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Error", "Failed to open add resource window");
-        }
-    }
-
-    @FXML
-    public void handleLogout() {
-        Stage stage = (Stage) studentCountLabel.getScene().getWindow();
-        stage.close();
-    }
-
-    public void addResource(RessourceModel resource) {
-        ressourceDAO.ajouterRessource(resource);
-        loadResources();
-        updateStats();
-    }
-
-    private void addActionButtonsToTable() {
+        // Add action buttons to the action column
         actionCol.setCellFactory(param -> new TableCell<>() {
-            private final Button btn = new Button("View Details");
+            private final Button detailButton = new Button("View");
+            private final Button deleteButton = new Button("Delete");
+            private final HBox buttonsBox = new HBox(5, detailButton, deleteButton);
 
             {
-                btn.setOnAction(event -> {
+                // Style the buttons
+                detailButton.setStyle("-fx-background-color: #9c64c3; -fx-text-fill: white; -fx-font-weight: bold;");
+                deleteButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+
+                detailButton.setOnAction(event -> {
                     RessourceModel resource = getTableView().getItems().get(getIndex());
                     showResourceDetails(resource);
+                });
+
+                deleteButton.setOnAction(event -> {
+                    RessourceModel resource = getTableView().getItems().get(getIndex());
+                    deleteResource(resource);
                 });
             }
 
@@ -128,47 +78,183 @@ public class TeacherController {
                 if (empty) {
                     setGraphic(null);
                 } else {
-                    setGraphic(btn);
+                    setGraphic(buttonsBox);
                 }
             }
         });
+
+        // Add search functionality
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            filterResources(newValue);
+        });
+
+        resourceTable.setItems(resourcesList);
+    }
+
+    private void filterResources(String searchText) {
+        if (searchText == null || searchText.isEmpty()) {
+            resourceTable.setItems(resourcesList);
+        } else {
+            ObservableList<RessourceModel> filteredList = FXCollections.observableArrayList();
+            for (RessourceModel resource : resourcesList) {
+                if (resource.getTitle().toLowerCase().contains(searchText.toLowerCase()) ||
+                        resource.getCategory().toLowerCase().contains(searchText.toLowerCase())) {
+                    filteredList.add(resource);
+                }
+            }
+            resourceTable.setItems(filteredList);
+        }
     }
 
     private void showResourceDetails(RessourceModel resource) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sysrec/projet_ds1_java/View/ResourceDetailView.fxml"));
-            Scene scene = new Scene(loader.load());
+            Parent root = loader.load();
 
             ResourceDetailController controller = loader.getController();
-            controller.setResource(resource);
+            controller.setResource(resource, this);
 
             Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle("Resource Details");
-            stage.setScene(scene);
+            stage.setScene(new Scene(root));
             stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException e) {
             showAlert("Error", "Failed to open resource details: " + e.getMessage());
         }
     }
 
-    @FXML
-    private void handleSearch() {
-        String query = searchField.getText().trim().toLowerCase();
-        if (query.isEmpty()) {
-            loadResources();
-            return;
+    private void deleteResource(RessourceModel resource) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirm Deletion");
+        alert.setHeaderText("Delete Resource");
+        alert.setContentText("Are you sure you want to delete '" + resource.getTitle() + "'?");
+
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                try {
+                    ressourceDAO.deleteResource(resource.getResourceId());
+                    resourcesList.remove(resource);
+                    updateDashboardStats();
+                    showAlert("Success", "Resource deleted successfully!");
+                } catch (SQLException e) {
+                    showAlert("Error", "Failed to delete resource: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    public void setCurrentTeacherId(int teacherId) {
+        this.currentTeacherId = teacherId;
+        loadResources();
+    }
+
+    public void setTeacherName(String teacherName) {
+        this.teacherName = teacherName;
+        welcomeLabel.setText(teacherName);
+        welcomeBackLabel.setText("👋 Welcome back, " + teacherName + "!");
+    }
+
+    private void loadResources() {
+        try {
+            resourcesList.clear();
+            List<RessourceModel> loadedResources = ressourceDAO.getResourcesByTeacherId(currentTeacherId);
+
+            // Set default values if null
+            for (RessourceModel resource : loadedResources) {
+                if (resource.getAverageRating() <= 0) {
+                    resource.setAverageRating(0.0);
+                }
+                if (resource.getStudentCount() < 0) {
+                    resource.setStudentCount(0);
+                }
+            }
+
+            resourcesList.addAll(loadedResources);
+            updateDashboardStats();
+        } catch (SQLException e) {
+            showAlert("Database Error", "Failed to load resources: " + e.getMessage());
         }
+    }
 
-        List<RessourceModel> filtered = resources.stream()
-                .filter(resource ->
-                        resource.getTitle().toLowerCase().contains(query) ||
-                                resource.getCategory().toLowerCase().contains(query) ||
-                                resource.getDifficulty().toLowerCase().contains(query) ||
-                                resource.getKeywords().toLowerCase().contains(query))
-                .toList();
+    private void updateDashboardStats() {
+        try {
+            resourceCountLabel.setText(String.valueOf(resourcesList.size()));
 
-        resources.setAll(filtered);
+            int studentCount = ressourceDAO.getStudentCountForTeacher(currentTeacherId);
+            studentCountLabel.setText(String.valueOf(studentCount));
+
+            double avgRating = ressourceDAO.getAverageRatingForTeacher(currentTeacherId);
+            averageRatingLabel.setText(String.format("%.1f", avgRating));
+
+        } catch (SQLException e) {
+            showAlert("Error", "Failed to update statistics: " + e.getMessage());
+        }
+    }
+
+    public void refreshResources() {
+        loadResources();
+    }
+
+    public void addResource(RessourceModel resource) {
+        try {
+            int generatedId = ressourceDAO.insert(resource);
+            resource.setResourceId(generatedId);
+            resourcesList.add(resource);
+            updateDashboardStats();
+            showAlert("Success", "Resource added successfully!");
+        } catch (SQLException e) {
+            showAlert("Database Error", "Failed to add resource: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    public void onAddResource() {
+        openAddResourceForm();
+    }
+
+    @FXML
+    public void handleLogout() {
+        try {
+            // Get reference to current stage
+            Stage currentStage = (Stage) welcomeLabel.getScene().getWindow();
+
+            // Load the login view
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sysrec/projet_ds1_java/View/LoginView.fxml"));
+            Parent loginRoot = loader.load();
+
+            // Create new scene and replace current scene
+            Scene loginScene = new Scene(loginRoot);
+            currentStage.setScene(loginScene);
+            currentStage.setTitle("Login");
+            currentStage.centerOnScreen();
+
+            // Clear any sensitive data
+            this.currentTeacherId = 0;
+            this.teacherName = null;
+            resourcesList.clear();
+        } catch (IOException e) {
+            showAlert("Error", "Failed to load login view: " + e.getMessage());
+        }
+    }
+
+    private void openAddResourceForm() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sysrec/projet_ds1_java/View/AddResourceView.fxml"));
+            Parent root = loader.load();
+
+            AddResourceController controller = loader.getController();
+            controller.setTeacherController(this);
+            controller.setCurrentTeacherId(currentTeacherId);
+
+            Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Add New Resource");
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (IOException e) {
+            showAlert("Error", "Failed to open form: " + e.getMessage());
+        }
     }
 
     private void showAlert(String title, String message) {
@@ -178,5 +264,4 @@ public class TeacherController {
         alert.setContentText(message);
         alert.showAndWait();
     }
-
 }

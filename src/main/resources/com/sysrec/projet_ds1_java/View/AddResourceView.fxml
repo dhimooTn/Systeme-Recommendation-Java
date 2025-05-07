@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
@@ -12,25 +13,28 @@
 
     <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Add New Resource" />
 
-    <!-- Simple form layout -->
     <VBox spacing="10">
-        <Label text="Title" />
+        <Label text="Title *" />
         <TextField fx:id="titleField" promptText="e.g., Introduction to Java Programming" />
 
-        <Label text="Category" />
+        <Label text="Category *" />
         <ComboBox fx:id="categoryCombo" />
 
-        <Label text="Description" />
-        <TextArea fx:id="descriptionArea" prefRowCount="3" promptText="Enter resource description" />
+        <Label text="Description *" />
+        <TextArea fx:id="descriptionArea" prefRowCount="3" promptText="Enter resource description" wrapText="true" />
 
-        <Label text="Difficulty" />
+        <Label text="Difficulty *" />
         <ComboBox fx:id="difficultyCombo" />
-        <HBox spacing="10" />
+
+        <Label text="Keywords" />
+        <TextField fx:id="keywordsField" promptText="Comma-separated keywords" />
+
+        <Label text="Status *" />
+        <ComboBox fx:id="statusComboBox" />
     </VBox>
 
-    <!-- Buttons at the bottom -->
     <HBox spacing="10" style="-fx-alignment: center-right; -fx-padding: 10 0 0 0;">
-        <Button onAction="#handleCancel" text="Cancel" />
+        <Button onAction="#handleCancel" text="Cancel" style="-fx-background-color: #f3f4f6; -fx-border-color: #d1d5db; -fx-border-width: 1;" />
         <Button onAction="#handleSubmit" style="-fx-background-color: #7c3aed; -fx-text-fill: white;" text="Submit" />
     </HBox>
 </VBox>

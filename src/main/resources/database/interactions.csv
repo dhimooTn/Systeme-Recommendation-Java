@@ -1,16 +1,8 @@
-user_id,item_id,rating,category,keywords
-1,101,5.0,Math,algebra calculus linear
-1,102,3.0,Computer Science,java python algorithms
-1,103,4.0,Economics,macroeconomics microeconomics finance
-2,101,4.0,Math,algebra calculus
-2,102,5.0,Computer Science,python machine learning deep learning
-2,104,3.0,Economics,macro finance stockmarket
-3,101,3.5,Math,algebra statistics calculus
-3,103,4.5,Economics,macro economics
-3,104,2.0,Economics,finance investment stockmarket
-4,102,4.5,Computer Science,java algorithms data structures
-4,103,2.5,Economics,finance economics investment
-4,105,4.0,Math,geometry calculus
-5,105,5.0,Math,geometry trigonometry
-5,104,4.0,Economics,macro economics finance
-5,106,3.5,Computer Science,python deep learning
+userId,itemId,rating,category,keywords
+1,6,3,management_science,process,optimization
+2,3,5,economic_science,micro,economy,demand
+2,5,2,management_science,planning,organizing,HR
+3,4,3,economic_science,macro,gdp,inflation
+3,2,2,computer_science,algorithms,graphs,dp
+4,5,4,management_science,planning,organizing,HR
+4,6,5,management_science,process,optimization

@@ -1,88 +1,47 @@
 package com.sysrec.projet_ds1_java.Model;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.time.LocalDateTime;
 
+/**
+ * Model class representing an interaction between a student and a resource.
+ */
 public class InteractionModel {
-    private int id;
-    private int etudiantId;
+    private int interactionId;
+    private int studentId;
+    private int resourceId;
+    private LocalDateTime savedAt;
+    private int rating; // 1-5
+    private LocalDateTime ratedAt;
 
-    public void setId(int id) {
-        this.id = id;
+    public InteractionModel(int interactionId, int studentId, int resourceId,
+                            LocalDateTime savedAt, int rating, LocalDateTime ratedAt) {
+        this.interactionId = interactionId;
+        this.studentId = studentId;
+        this.resourceId = resourceId;
+        this.savedAt = savedAt;
+        this.rating = rating;
+        this.ratedAt = ratedAt;
     }
 
-    private int ressourceId;
-    private int avis; // 1 = approuvé, 0 = rejeté, 2 = enregistré
-
-    public InteractionModel(int id, int etudiantId, int ressourceId, int avis) {
-        this.id = id;
-        this.etudiantId = etudiantId;
-        this.ressourceId = ressourceId;
-        this.avis = avis;
+    public InteractionModel(int studentId, int resourceId, int rating) {
+        this(0, studentId, resourceId, null, rating, null);
     }
 
-    public InteractionModel(int etudiantId, int ressourceId, int avis) {
-        this.etudiantId = etudiantId;
-        this.ressourceId = ressourceId;
-        this.avis = avis;
+    // Add a new constructor that matches the pattern used in StudentController.java
+    public InteractionModel(int studentId, int resourceId, LocalDateTime savedAt, int rating, LocalDateTime ratedAt) {
+        this(0, studentId, resourceId, savedAt, rating, ratedAt);
     }
 
-    public int getId() { return id; }
-    public int getEtudiantId() { return etudiantId; }
-    public int getRessourceId() { return ressourceId; }
-    public int getAvis() { return avis; }
+    // Getters
+    public int getInteractionId() { return interactionId; }
+    public int getStudentId() { return studentId; }
+    public int getResourceId() { return resourceId; }
+    public LocalDateTime getSavedAt() { return savedAt; }
+    public int getRating() { return rating; }
+    public LocalDateTime getRatedAt() { return ratedAt; }
 
-    public void setAvis(int avis) {
-        this.avis = avis;
-    }
-
-    public boolean estApprouvee() {
-        return this.avis == 1;
-    }
-
-    public boolean estRejetee() {
-        return this.avis == 0;
-    }
-
-    public boolean estEnregistree() {
-        return this.avis == 2;
-    }
-
-    public static int countInteractionsParEtudiant(Connection conn, int etudiantId) {
-        String sql = "SELECT COUNT(*) FROM RessourceInteraction WHERE student_id = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, etudiantId);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
-    public static int countRessourcesApprouveesParEtudiant(Connection conn, int etudiantId) {
-        String sql = "SELECT COUNT(*) FROM RessourceInteraction WHERE student_id = ? AND rating = 5";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, etudiantId);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
-    public static int countRessourcesEnregistreesParEtudiant(Connection conn, int etudiantId) {
-        String sql = "SELECT COUNT(*) FROM RessourceInteraction WHERE student_id = ? AND rating IS NOT NULL";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, etudiantId);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
+    // Setters
+    public void setInteractionId(int interactionId) { this.interactionId = interactionId; }
+    public void setRating(int rating) { this.rating = rating; }
+    public void setRatedAt(LocalDateTime ratedAt) { this.ratedAt = ratedAt; }
 }

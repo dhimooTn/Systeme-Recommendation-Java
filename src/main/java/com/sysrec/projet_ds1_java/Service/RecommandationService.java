@@ -2,9 +2,12 @@ package com.sysrec.projet_ds1_java.Service;
 
 import com.sysrec.projet_ds1_java.Dao.RessourceDAO;
 import com.sysrec.projet_ds1_java.Model.RessourceModel;
+import com.sysrec.projet_ds1_java.Utils.DbToCsv;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,10 +29,24 @@ public class RecommandationService {
         }
     }
 
-    public List<RessourceModel> getUserBasedRecommendations(long userId) throws Exception {
-        Map<Long, Map<Long, ItemData>> data = loadData(DATA_PATH);
-        Map<Long, ItemData> targetRatings = data.get(userId);
+    private void updateInteractionData() {
+        try {
+            DbToCsv.main(new String[]{});
+            System.out.println("✅ Interaction data updated successfully");
+        } catch (Exception e) {
+            System.out.println("❌ Failed to update interaction data: " + e.getMessage());
+            throw new RuntimeException("Failed to update interaction data", e);
+        }
+    }
 
+    public List<RessourceModel> getUserBasedRecommendations(long userId) throws Exception {
+        updateInteractionData();
+        Map<Long, Map<Long, ItemData>> data = loadData(DATA_PATH);
+        if (data == null || data.isEmpty()) {
+            return getPopularResources();
+        }
+
+        Map<Long, ItemData> targetRatings = data.get(userId);
         if (targetRatings == null || targetRatings.isEmpty()) {
             return getPopularResources();
         }
@@ -64,22 +81,35 @@ public class RecommandationService {
 
         Map<Long, Double> predictions = new HashMap<>();
         for (Long itemId : weightedSums.keySet()) {
-            double predicted = weightedSums.get(itemId) / simSums.get(itemId);
-            predictions.put(itemId, predicted);
+            if (simSums.get(itemId) != 0) {
+                double predicted = weightedSums.get(itemId) / simSums.get(itemId);
+                predictions.put(itemId, predicted);
+            }
         }
 
         return predictions.entrySet().stream()
                 .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
                 .limit(2)
-                .map(entry -> ressourceDAO.getRessourceParId(entry.getKey().intValue()))
+                .map(entry -> {
+                    try {
+                        return ressourceDAO.getRessourceParId(entry.getKey().intValue());
+                    } catch (SQLException e) {
+                        System.err.println("Error fetching resource: " + entry.getKey());
+                        return null;
+                    }
+                })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     public List<RessourceModel> getItemBasedRecommendations(long userId) throws Exception {
+        updateInteractionData();
         Map<Long, Map<Long, ItemData>> data = loadData(DATA_PATH);
-        Map<Long, ItemData> targetRatings = data.get(userId);
+        if (data == null || data.isEmpty()) {
+            return getPopularResources();
+        }
 
+        Map<Long, ItemData> targetRatings = data.get(userId);
         if (targetRatings == null || targetRatings.isEmpty()) {
             return getPopularResources();
         }
@@ -113,26 +143,36 @@ public class RecommandationService {
 
         return predictions.entrySet().stream()
                 .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
-                .limit(10)
-                .map(entry -> ressourceDAO.getRessourceParId(entry.getKey().intValue()))
+                .limit(2)
+                .map(entry -> {
+                    try {
+                        return ressourceDAO.getRessourceParId(entry.getKey().intValue());
+                    } catch (SQLException e) {
+                        System.err.println("Error fetching resource: " + entry.getKey());
+                        return null;
+                    }
+                })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private List<RessourceModel> getPopularResources() {
-        List<RessourceModel> allResources = ressourceDAO.getToutesLesRessources();
+    private List<RessourceModel> getPopularResources() throws SQLException {
+        List<RessourceModel> allResources = ressourceDAO.getRessourcesApprouvees();
         return allResources.stream()
                 .sorted((r1, r2) -> Double.compare(
                         getAverageRating(r2.getResourceId()),
                         getAverageRating(r1.getResourceId())))
-                .limit(10)
+                .limit(2)
                 .collect(Collectors.toList());
     }
 
     private double getAverageRating(int resourceId) {
-        // Implement this method based on your database structure
-        // This is a placeholder implementation
-        return 0.0;
+        try {
+            return ressourceDAO.getAverageRatingForTeacher(resourceId);
+        } catch (SQLException e) {
+            System.err.println("Error getting average rating for resource: " + resourceId);
+            return 0.0;
+        }
     }
 
     private Map<Long, Map<Long, ItemData>> loadData(String filePath) throws Exception {
@@ -142,7 +182,10 @@ public class RecommandationService {
             reader.readLine(); // Skip header
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length < 5) continue;
+                if (parts.length < 5) {
+                    System.err.println("Skipping malformed line: " + line);
+                    continue;
+                }
 
                 try {
                     long userId = Long.parseLong(parts[0].trim());
@@ -152,39 +195,48 @@ public class RecommandationService {
                     String[] keywords = parts[4].trim().split("\\s+");
 
                     ItemData itemData = new ItemData(rating, category, keywords);
-                    data.putIfAbsent(userId, new HashMap<>());
-                    data.get(userId).put(itemId, itemData);
+                    data.computeIfAbsent(userId, k -> new HashMap<>()).put(itemId, itemData);
                 } catch (NumberFormatException e) {
-                    System.out.println("❌ Ligne ignorée (format incorrect) : " + line);
+                    System.err.println("Skipping line with invalid number format: " + line);
                 }
             }
+        } catch (IOException e) {
+            System.err.println("Error reading data file: " + e.getMessage());
+            throw e;
         }
         return data;
     }
 
     private double cosineSimilarity(String[] a, String[] b) {
-        Set<String> all = new HashSet<>();
-        Collections.addAll(all, a);
-        Collections.addAll(all, b);
+        if (a == null || b == null || a.length == 0 || b.length == 0) {
+            return 0.0;
+        }
 
-        int[] vecA = new int[all.size()];
-        int[] vecB = new int[all.size()];
+        Set<String> allKeywords = new HashSet<>();
+        Collections.addAll(allKeywords, a);
+        Collections.addAll(allKeywords, b);
+
+        int[] vecA = new int[allKeywords.size()];
+        int[] vecB = new int[allKeywords.size()];
         int index = 0;
 
-        for (String keyword : all) {
+        for (String keyword : allKeywords) {
             vecA[index] = Arrays.asList(a).contains(keyword) ? 1 : 0;
             vecB[index] = Arrays.asList(b).contains(keyword) ? 1 : 0;
             index++;
         }
 
-        double dot = 0, normA = 0, normB = 0;
+        double dotProduct = 0.0;
+        double normA = 0.0;
+        double normB = 0.0;
+
         for (int i = 0; i < vecA.length; i++) {
-            dot += vecA[i] * vecB[i];
-            normA += vecA[i] * vecA[i];
-            normB += vecB[i] * vecB[i];
+            dotProduct += vecA[i] * vecB[i];
+            normA += Math.pow(vecA[i], 2);
+            normB += Math.pow(vecB[i], 2);
         }
 
-        return (normA == 0 || normB == 0) ? 0 : dot / (Math.sqrt(normA) * Math.sqrt(normB));
+        return (normA == 0 || normB == 0) ? 0.0 : dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
     private double computePearsonSimilarity(Map<Long, ItemData> a, Map<Long, ItemData> b) {
@@ -192,9 +244,11 @@ public class RecommandationService {
         commonItems.retainAll(b.keySet());
 
         int n = commonItems.size();
-        if (n == 0) return 0;
+        if (n == 0) return 0.0;
 
-        double sumA = 0, sumB = 0, sumSqA = 0, sumSqB = 0, sumProd = 0;
+        double sumA = 0.0, sumB = 0.0;
+        double sumSqA = 0.0, sumSqB = 0.0;
+        double sumProduct = 0.0;
 
         for (Long itemId : commonItems) {
             double ra = a.get(itemId).rating;
@@ -204,20 +258,20 @@ public class RecommandationService {
             sumB += rb;
             sumSqA += ra * ra;
             sumSqB += rb * rb;
-            sumProd += ra * rb;
+            sumProduct += ra * rb;
         }
 
-        double numerator = sumProd - (sumA * sumB / n);
-        double denominator = Math.sqrt(sumSqA - (sumA * sumA / n)) * Math.sqrt(sumSqB - (sumB * sumB / n));
+        double numerator = sumProduct - (sumA * sumB / n);
+        double denominator = Math.sqrt((sumSqA - (sumA * sumA / n)) * (sumSqB - (sumB * sumB / n)));
 
-        return (denominator == 0) ? 0 : numerator / denominator;
+        return (denominator == 0) ? 0.0 : numerator / denominator;
     }
 
     public void recommendUserBased(long userId) throws Exception {
         List<RessourceModel> recommendations = getUserBasedRecommendations(userId);
-        System.out.println("\n✅ Recommandations USER-BASED pour l'utilisateur " + userId + " :");
+        System.out.println("\n✅ USER-BASED RECOMMENDATIONS for user " + userId + ":");
         if (recommendations.isEmpty()) {
-            System.out.println("  ⚠️ Pas assez de similarité pour générer une recommandation.");
+            System.out.println("  ⚠️ No recommendations available (not enough similarity data)");
         } else {
             recommendations.forEach(r ->
                     System.out.println("  ➤ " + r.getTitle() + " (ID: " + r.getResourceId() + ")"));
@@ -226,9 +280,9 @@ public class RecommandationService {
 
     public void recommendItemBased(long userId) throws Exception {
         List<RessourceModel> recommendations = getItemBasedRecommendations(userId);
-        System.out.println("\n✅ Recommandations ITEM-BASED pour l'utilisateur " + userId + " :");
+        System.out.println("\n✅ ITEM-BASED RECOMMENDATIONS for user " + userId + ":");
         if (recommendations.isEmpty()) {
-            System.out.println("  ⚠️ Aucune recommandation possible (pas assez de similarité).");
+            System.out.println("  ⚠️ No recommendations available (not enough similarity data)");
         } else {
             recommendations.forEach(r ->
                     System.out.println("  ➤ " + r.getTitle() + " (ID: " + r.getResourceId() + ")"));
@@ -237,7 +291,10 @@ public class RecommandationService {
 
     public static void main(String[] args) throws Exception {
         RecommandationService recommender = new RecommandationService();
-        recommender.recommendUserBased(2);
-        recommender.recommendItemBased(2);
+
+
+        recommender.recommendUserBased(1);
+        recommender.recommendItemBased(1);
+
     }
 }

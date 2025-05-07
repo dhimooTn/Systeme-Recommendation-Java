@@ -1,43 +1,93 @@
 package com.sysrec.projet_ds1_java.Controller;
 
+import com.sysrec.projet_ds1_java.Dao.RessourceDAO;
 import com.sysrec.projet_ds1_java.Model.RessourceModel;
-import com.sysrec.projet_ds1_java.Dao.UtilisateurDAO;
 import javafx.fxml.FXML;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
 
+import java.sql.SQLException;
+
 public class ResourceDetailController {
-    @FXML private Label titleLabel;
-    @FXML private Label categoryLabel;
-    @FXML private Label difficultyLabel;
-    @FXML private Label descriptionLabel;
+
+    @FXML private TextField titleField;
+    @FXML private TextField categoryField;
+    @FXML private TextField difficultyField;
+    @FXML private TextArea descriptionField;
     @FXML private Label ratingLabel;
-    @FXML private Label teacherLabel;
-    @FXML private Label keywordsLabel;
-    @FXML private Label createdAtLabel;
+    @FXML private Label studentCountLabel;
+    @FXML private ComboBox<String> statusComboBox;
 
-    private final UtilisateurDAO utilisateurDAO = new UtilisateurDAO();
+    private RessourceModel resource;
+    private TeacherController teacherController;
 
-    public void setResource(RessourceModel resource) {
-        titleLabel.setText(resource.getTitle());
-        categoryLabel.setText(resource.getCategory());
-        difficultyLabel.setText(resource.getDifficulty());
-        descriptionLabel.setText(resource.getDescription());
-        keywordsLabel.setText(resource.getKeywords());
-        createdAtLabel.setText(resource.getCreatedAt().toString());
+    public void setResource(RessourceModel resource, TeacherController controller) {
+        this.resource = resource;
+        this.teacherController = controller;
 
-        // Get teacher name
-        String teacherName = utilisateurDAO.getUtilisateurParId(resource.getTeacherId()).getName();
-        teacherLabel.setText(teacherName);
+        titleField.setText(resource.getTitle());
+        categoryField.setText(resource.getCategory());
+        difficultyField.setText(resource.getDifficulty());
+        descriptionField.setText(resource.getDescription());
+        ratingLabel.setText(String.format("%.1f", resource.getAverageRating()));
+        studentCountLabel.setText(String.valueOf(resource.getStudentCount()));
 
-        // Calculate average rating
-        double averageRating = resource.getAverageRating();
-        ratingLabel.setText(String.format("%.1f / 5.0", averageRating));
+        statusComboBox.getItems().addAll("Private", "Public");
+        statusComboBox.setValue(resource.isPrivate() ? "Private" : "Public");
     }
 
     @FXML
-    public void handleClose() {
-        Stage stage = (Stage) titleLabel.getScene().getWindow();
+    public void handleDelete() {
+        if (resource != null) {
+            try {
+                RessourceDAO dao = new RessourceDAO();
+                dao.deleteResource(resource.getResourceId());
+
+                if (teacherController != null) {
+                    teacherController.refreshResources();
+                }
+                closeWindow();
+            } catch (SQLException e) {
+                showErrorAlert("Error deleting resource", e.getMessage());
+            }
+        }
+    }
+
+    @FXML
+    public void handleModify() {
+        if (resource != null) {
+            try {
+                resource.setTitle(titleField.getText());
+                resource.setCategory(categoryField.getText());
+                resource.setDifficulty(difficultyField.getText());
+                resource.setDescription(descriptionField.getText());
+
+                String selectedStatus = statusComboBox.getValue();
+                resource.setPrivate("Private".equals(selectedStatus));
+
+                RessourceDAO dao = new RessourceDAO();
+                dao.updateResource(resource);
+
+                if (teacherController != null) {
+                    teacherController.refreshResources();
+                }
+                closeWindow();
+            } catch (SQLException e) {
+                showErrorAlert("Error updating resource", e.getMessage());
+            }
+        }
+    }
+
+    private void closeWindow() {
+        Stage stage = (Stage) titleField.getScene().getWindow();
         stage.close();
+    }
+
+    private void showErrorAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

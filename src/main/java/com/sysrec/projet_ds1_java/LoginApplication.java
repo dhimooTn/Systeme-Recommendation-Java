@@ -14,7 +14,7 @@ public class LoginApplication extends Application {
         StackPane rootContainer = new StackPane();
 
         // Load the initial login view
-        Parent loginView = FXMLLoader.load(getClass().getResource("/com/sysrec/projet_ds1_java/View/LoginView.fxml"));
+        Parent loginView = FXMLLoader.load(getClass().getResource("View/LoginView.fxml"));
 
         // Add the login view to our container
         rootContainer.getChildren().add(loginView);

@@ -1,10 +1,11 @@
 package com.sysrec.projet_ds1_java.Model;
 
 import javafx.beans.property.*;
-
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
+/**
+ * Model class representing a resource in the system.
+ */
 public class RessourceModel {
     private final IntegerProperty resourceId = new SimpleIntegerProperty();
     private final StringProperty title = new SimpleStringProperty();
@@ -14,15 +15,14 @@ public class RessourceModel {
     private final StringProperty keywords = new SimpleStringProperty();
     private final IntegerProperty teacherId = new SimpleIntegerProperty();
     private final BooleanProperty isApproved = new SimpleBooleanProperty();
+    private final BooleanProperty isPrivate = new SimpleBooleanProperty();
     private final ObjectProperty<LocalDateTime> createdAt = new SimpleObjectProperty<>();
-    private final StringProperty format = new SimpleStringProperty();
-    private final StringProperty tags = new SimpleStringProperty();
-    private final StringProperty url = new SimpleStringProperty();
     private final DoubleProperty averageRating = new SimpleDoubleProperty();
+    private final IntegerProperty studentCount = new SimpleIntegerProperty();
 
     public RessourceModel(int resourceId, String title, String description, String difficulty,
                           String category, String keywords, int teacherId, boolean isApproved,
-                          LocalDateTime createdAt, String format, String tags, String url) {
+                          boolean isPrivate, LocalDateTime createdAt, int studentCount, double averageRating) {
         this.resourceId.set(resourceId);
         this.title.set(title);
         this.description.set(description);
@@ -31,36 +31,24 @@ public class RessourceModel {
         this.keywords.set(keywords);
         this.teacherId.set(teacherId);
         this.isApproved.set(isApproved);
+        this.isPrivate.set(isPrivate);
         this.createdAt.set(createdAt);
-        this.format.set(format);
-        this.tags.set(tags);
-        this.url.set(url);
-    }
-
-    public RessourceModel() {}
-
-    public String afficheRessource() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        return "ID: " + getResourceId() +
-                "\nTitre: " + getTitle() +
-                "\nDescription: " + getDescription() +
-                "\nDifficulté: " + getDifficulty() +
-                "\nCatégorie: " + getCategory() +
-                "\nFormat: " + getFormat() +
-                "\nMots-clés: " + getKeywords() +
-                "\nTags: " + getTags() +
-                "\nLien: " + getUrl() +
-                "\nID Enseignant: " + getTeacherId() +
-                "\nApprouvée: " + (isApproved() ? "Oui" : "Non") +
-                "\nCréée le: " + (getCreatedAt() != null ? getCreatedAt().format(formatter) : "Non spécifiée") +
-                "\nNote Moyenne: " + getAverageRating();
+        this.studentCount.set(studentCount);
     }
 
     // Property getters
+    public IntegerProperty resourceIdProperty() { return resourceId; }
     public StringProperty titleProperty() { return title; }
-    public StringProperty categoryProperty() { return category; }
+    public StringProperty descriptionProperty() { return description; }
     public StringProperty difficultyProperty() { return difficulty; }
+    public StringProperty categoryProperty() { return category; }
+    public StringProperty keywordsProperty() { return keywords; }
+    public IntegerProperty teacherIdProperty() { return teacherId; }
+    public BooleanProperty isApprovedProperty() { return isApproved; }
+    public BooleanProperty isPrivateProperty() { return isPrivate; }
+    public ObjectProperty<LocalDateTime> createdAtProperty() { return createdAt; }
     public DoubleProperty averageRatingProperty() { return averageRating; }
+    public IntegerProperty studentCountProperty() { return studentCount; }
 
     // Getters
     public int getResourceId() { return resourceId.get(); }
@@ -69,13 +57,12 @@ public class RessourceModel {
     public String getDifficulty() { return difficulty.get(); }
     public String getCategory() { return category.get(); }
     public String getKeywords() { return keywords.get(); }
-    public String getFormat() { return format.get(); }
-    public String getTags() { return tags.get(); }
-    public String getUrl() { return url.get(); }
     public int getTeacherId() { return teacherId.get(); }
     public boolean isApproved() { return isApproved.get(); }
+    public boolean isPrivate() { return isPrivate.get(); }
     public LocalDateTime getCreatedAt() { return createdAt.get(); }
     public double getAverageRating() { return averageRating.get(); }
+    public int getStudentCount() { return studentCount.get(); }
 
     // Setters
     public void setResourceId(int resourceId) { this.resourceId.set(resourceId); }
@@ -84,11 +71,10 @@ public class RessourceModel {
     public void setDifficulty(String difficulty) { this.difficulty.set(difficulty); }
     public void setCategory(String category) { this.category.set(category); }
     public void setKeywords(String keywords) { this.keywords.set(keywords); }
-    public void setFormat(String format) { this.format.set(format); }
-    public void setTags(String tags) { this.tags.set(tags); }
-    public void setUrl(String url) { this.url.set(url); }
     public void setTeacherId(int teacherId) { this.teacherId.set(teacherId); }
     public void setApproved(boolean approved) { this.isApproved.set(approved); }
+    public void setPrivate(boolean isPrivate) { this.isPrivate.set(isPrivate); }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt.set(createdAt); }
     public void setAverageRating(double averageRating) { this.averageRating.set(averageRating); }
+    public void setStudentCount(int studentCount) { this.studentCount.set(studentCount); }
 }

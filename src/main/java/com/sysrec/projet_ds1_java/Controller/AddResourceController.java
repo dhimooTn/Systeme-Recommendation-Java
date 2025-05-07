@@ -4,115 +4,104 @@ import com.sysrec.projet_ds1_java.Model.RessourceModel;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+
 import java.time.LocalDateTime;
 
 public class AddResourceController {
+
     @FXML private TextField titleField;
+    @FXML private ComboBox<String> categoryCombo;
     @FXML private TextArea descriptionArea;
     @FXML private ComboBox<String> difficultyCombo;
-    @FXML private ComboBox<String> categoryCombo;
+    @FXML private ComboBox<String> statusComboBox;
     @FXML private TextField keywordsField;
-    @FXML private Button saveButton;
-    @FXML private Button cancelButton;
-    @FXML private Label errorLabel;
 
     private TeacherController teacherController;
     private int currentTeacherId;
 
-    @FXML
-    public void initialize() {
-        // Set difficulty levels
-        difficultyCombo.getItems().addAll("Beginner", "Intermediate", "Advanced");
-        difficultyCombo.getSelectionModel().selectFirst();
-
-        // Set categories
-        categoryCombo.getItems().addAll(
-                "Computer Science",
-                "Economic Science",
-                "Management Science",
-                "Mathematics",
-                "Physics"
-        );
-        categoryCombo.getSelectionModel().selectFirst();
-
-        // Initialize button actions (added missing initialization)
-        saveButton.setOnAction(e -> handleSave());
-        cancelButton.setOnAction(e -> handleCancel());
-    }
-
-    // Added missing @FXML annotations for handler methods
-    @FXML
-    private void handleSave() {
-        // Validate fields
-        if (titleField.getText().isEmpty()) {
-            showError("Title is required");
-            return;
-        }
-
-        if (descriptionArea.getText().isEmpty()) {
-            showError("Description is required");
-            return;
-        }
-
-        if (keywordsField.getText().isEmpty()) {
-            showError("Keywords are required");
-            return;
-        }
-
-        // Create new resource
-        RessourceModel newResource = new RessourceModel(
-                0, // Temporary ID
-                titleField.getText(),
-                descriptionArea.getText(),
-                difficultyCombo.getValue(),
-                categoryCombo.getValue(),
-                keywordsField.getText(),
-                this.currentTeacherId,
-                true, // Approved by default
-                LocalDateTime.now()
-        );
-
-        // Add resource via parent controller
-        if (teacherController != null) {
-            teacherController.addResource(newResource);
-        }
-
-        closeWindow();
-    }
-
-    @FXML
-    private void handleCancel() {
-        closeWindow();
-    }
-
-    private void showError(String message) {
-        errorLabel.setText(message);
-        errorLabel.setVisible(true);
-    }
-
-    private void closeWindow() {
-        Stage stage = (Stage) cancelButton.getScene().getWindow();
-        stage.close();
-    }
-
-    // Setters for dependency injection
-    public void setTeacherController(TeacherController teacherController) {
-        this.teacherController = teacherController;
+    public void setTeacherController(TeacherController controller) {
+        this.teacherController = controller;
     }
 
     public void setCurrentTeacherId(int teacherId) {
         this.currentTeacherId = teacherId;
     }
 
-    // Getters (optional)
-    public TextField getTitleField() { return titleField; }
-    public TeacherController getTeacherController() { return teacherController; }
-    public Button getSaveButton() { return saveButton; }
-    public TextField getKeywordsField() { return keywordsField; }
-    public Label getErrorLabel() { return errorLabel; }
-    public ComboBox<String> getDifficultyCombo() { return difficultyCombo; }
-    public TextArea getDescriptionArea() { return descriptionArea; }
-    public int getCurrentTeacherId() { return currentTeacherId; }
-    public ComboBox<String> getCategoryCombo() { return categoryCombo; }
-    public Button getCancelButton() { return cancelButton; }
+    @FXML
+    public void initialize() {
+        categoryCombo.getItems().addAll("computer_science", "economic_science");
+        difficultyCombo.getItems().addAll("easy", "hard", "medium");
+        statusComboBox.getItems().addAll("Private", "Public");
+        statusComboBox.setValue("Private");
+
+        categoryCombo.setValue("Computer Science");
+        difficultyCombo.setValue("Beginner");
+    }
+
+    @FXML
+    public void handleSubmit() {
+        if (teacherController == null) {
+            showAlert("Controller error: TeacherController not set.");
+            return;
+        }
+
+        String title = titleField.getText().trim();
+        String category = categoryCombo.getValue();
+        String description = descriptionArea.getText().trim();
+        String difficulty = difficultyCombo.getValue();
+        String status = statusComboBox.getValue();
+        String keywords = keywordsField.getText().trim();
+
+        // Validation
+        if (title.isEmpty()) {
+            showAlert("Title is required.");
+            titleField.requestFocus();
+            return;
+        }
+
+        if (description.isEmpty()) {
+            showAlert("Please add a description.");
+            descriptionArea.requestFocus();
+            return;
+        }
+
+        boolean isPrivate = "Private".equals(status);
+
+        // Create resource with all required fields including initial ratings and student count
+        RessourceModel resource = new RessourceModel(
+                0, // resourceId (will be generated by database)
+                title,
+                description,
+                difficulty,
+                category,
+                keywords,
+                currentTeacherId,
+                false, // isApproved
+                isPrivate,
+                LocalDateTime.now(), // createdAt
+                0, // initial studentCount
+                0.0 // initial averageRating
+        );
+
+        teacherController.addResource(resource);
+        closeWindow();
+    }
+
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Missing Fields");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    @FXML
+    public void handleCancel() {
+        closeWindow();
+    }
+
+    private void closeWindow() {
+        Stage stage = (Stage) titleField.getScene().getWindow();
+        stage.close();
+    }
 }
